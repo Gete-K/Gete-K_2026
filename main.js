@@ -306,7 +306,19 @@ const rafThrottle = (fn) => {
  * - Driveの共有URLはそのまま貼ってOK（JS側で表示用URLに変換する）
  * ========================================================= */
 
+function isEmptySetting(value) {
+  // site.def を編集する人が「空欄の意味」を書き残せるようにする。
+  // 例：members.1.photo = なし
+  // 例：hero.reserve.url = null
+  //
+  // 空欄でも動きますが、「あとで入れる」「今は使わない」が分かりやすいように
+  // 代表的な空値ワードを空文字として扱います。
+  const s = String(value ?? "").trim().toLowerCase();
+  return ["", "null", "none", "n/a", "na", "-", "なし", "未設定"].includes(s);
+}
+
 function normalizeImageUrl(url) {
+  if (isEmptySetting(url)) return "";
   if (!url) return "";
   const s = String(url).trim();
   if (!s) return "";
@@ -488,13 +500,17 @@ function normalizeState(raw) {
   })).filter((s) => s.label || s.title || s.text || s.url);
 
   state.meta = state.meta || {};
+  state.theme = state.theme || {};
   state.branding = state.branding || {};
+  state.branding.logo = state.branding.logo || {};
   state.contact = state.contact || {};
   state.footer = state.footer || {};
 
   const toStr = (obj, k) => { if (obj && obj[k] != null) obj[k] = String(obj[k]).trim(); };
   ["siteTitle","description","themeColor","ogTitle","ogDescription","ogImage","ogUrl"].forEach(k => toStr(state.meta,k));
+  ["palette"].forEach(k => toStr(state.theme,k));
   ["troupeNameJp","troupeNameEn"].forEach(k => toStr(state.branding,k));
+  ["src","alt"].forEach(k => toStr(state.branding.logo,k));
   ["sub","conceptTitle","concept","historyTitle"].forEach(k => toStr(state.about,k));
   ["sub","note"].forEach(k => toStr(state.schedule,k));
   ["sub","email"].forEach(k => toStr(state.contact,k));
@@ -526,6 +542,8 @@ function textToHtmlWithBreaks(s) {
 }
 
 function safeUrl(url) {
+  if (isEmptySetting(url)) return "";
+
   const s = String(url ?? "").trim();
   if (!s) return "";
 
@@ -568,6 +586,14 @@ function linkHtml(label, url) {
 }
 
 function applyStateToDom(state) {
+  const allowedThemes = ["theater-classic", "black-gold", "literary-green", "pop-red"];
+  const palette = state.theme?.palette || "theater-classic";
+
+  // 初心者向けメモ：
+  // CSS側に用意した配色プリセット名だけを許可しています。
+  // site.def の theme.palette に違う文字を書いても、標準テーマに戻るので安心です。
+  document.documentElement.dataset.theme = allowedThemes.includes(palette) ? palette : "theater-classic";
+
   if (state.meta?.siteTitle) document.title = state.meta.siteTitle;
 
   const setMeta = (selector, attr, value) => {
@@ -595,6 +621,25 @@ function applyStateToDom(state) {
   const brandEn = document.querySelector(".brand__en");
   if (brandJp && state.branding?.troupeNameJp) brandJp.textContent = state.branding.troupeNameJp;
   if (brandEn && state.branding?.troupeNameEn) brandEn.textContent = state.branding.troupeNameEn;
+
+  const brandMark = document.querySelector(".brand__mark");
+  if (brandMark) {
+    const src = state.branding?.logo?.src ? safeUrl(normalizeImageUrl(state.branding.logo.src)) : "";
+    const alt = state.branding?.logo?.alt || "";
+
+    // 初心者向けメモ：
+    // branding.logo.src が空なら画像ロゴは表示しません。
+    // 文字ロゴは残るので、画像が未準備でもヘッダーは崩れません。
+    if (src) {
+      brandMark.src = src;
+      brandMark.alt = alt;
+      brandMark.hidden = false;
+    } else {
+      brandMark.removeAttribute("src");
+      brandMark.alt = "";
+      brandMark.hidden = true;
+    }
+  }
 
   const heroBadge = document.querySelector(".hero .badge");
   const heroTitle = document.querySelector(".hero__title");

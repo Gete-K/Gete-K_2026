@@ -13,9 +13,16 @@
 ; 3) 空行はOK
 ; 4) 行の先頭が「;」の行は説明なので消してもOK
 ; 5) 文字は日本語OK
-; 6) 画像URLはGoogleDriveの共有URLを貼る
+; 6) 画像は「公開してよいWeb用画像」だけを使う
 ; 7) URLがまだ無い項目は空のままでOK
 ; 8) 文章を改行したいときは「\n」と書く（例：1行目\n2行目）
+; 9) 画像やURLを使わない場合は「なし」と書いてOK
+;
+; ▼ 写真の注意
+; ・劇団員写真は、本人の掲載許可を取ってから使う
+; ・元画像や高解像度画像はGitHubに置かない
+; ・EXIFや位置情報を削除してから使う
+; ・ファイル名に本名や撮影場所を入れない
 ;
 ; ▼ 保存方法
 ; 編集したら保存 → GitHubにアップロード → 反映
@@ -36,6 +43,16 @@ meta.description = 劇団〇〇の公式サイトです。次回公演情報、N
 ; サイトのテーマカラー（基本そのままでOK）
 meta.themeColor = #B23A3A
 
+; ============================================================
+; 0.5) THEME（配色）
+; ============================================================
+; ▼ 順番に試す場合は、下の値を差し替えて保存してください。
+; 1) theater-classic  = 墨黒 + 深い赤 + 生成り（一番おすすめ）
+; 2) black-gold       = 黒 + 金（現代的・高級感）
+; 3) literary-green   = 墨黒 + くすみ緑（静かな文芸系）
+; 4) pop-red          = 黒紫 + 明るい赤（若くSNS寄り）
+theme.palette = theater-classic 
+
 ; SNSでURLを貼ったときの見え方（分からなければ空でOK）
 meta.ogTitle = 劇団XX｜公式サイト
 meta.ogDescription = 次回公演情報・スケジュール・最新Newsはこちら
@@ -53,6 +70,12 @@ branding.troupeNameJp = 劇団XX
 
 ; 英語団体名
 branding.troupeNameEn = GEKIDAN XX
+
+; ヘッダーの「劇団XX」の左に出す画像ロゴ
+; 空欄または「なし」なら画像は表示されず、文字だけになります。
+; 例：branding.logo.src = ./assets/public/branding/logo.png
+branding.logo.src = なし
+branding.logo.alt =
 
 
 
@@ -96,11 +119,11 @@ hero.detail.url =
 hero.note = ※ 内容は変更になる場合があります。
 
 ; ===== キービジュアル =====
-; GoogleDrive画像を使う場合
-; 1) 画像をアップ
-; 2) 共有設定「リンクを知っている全員が閲覧可」
-; 3) URLをここに貼る
-hero.keyVisual.src =
+; 画像は、公開してよいWeb用画像だけ使います。
+; リポジトリ内に置く場合の例：./assets/public/keyvisual.jpg
+; 外部URLを使う場合の例：https://example.com/keyvisual.jpg
+; 使わない場合：なし
+hero.keyVisual.src = なし
 hero.keyVisual.alt =
 
 
@@ -180,24 +203,33 @@ history.2.text = 第1回公演『〇〇』
 
 ; enabled = true なら表示
 ; false にすると非表示
-; photo にはGoogleDrive画像URLを貼れます
+;
+; ▼ 劇団員写真のルール
+; ・本人から公式サイト掲載の許可を取る
+; ・未成年の場合は保護者の同意も取る
+; ・Web用にリサイズし、EXIF/位置情報を削除する
+; ・ファイル名に本名を入れない（member-01.jpg などにする）
+; ・公開してよい画像だけ assets/public/members/ に置く
+;
+; photo の例：./assets/public/members/member-01.jpg
+; 写真を載せない場合：なし
 ; snsUrl が空ならSNSリンクは表示されません
 
 members.1.enabled = true
 members.1.name = 山田太郎
 members.1.role = 代表
 members.1.note =
-members.1.photo =
+members.1.photo = なし
 members.1.snsLabel = X
-members.1.snsUrl =
+members.1.snsUrl = なし
 
 members.2.enabled = true
 members.2.name = 佐藤花子
 members.2.role = 役者
 members.2.note =
-members.2.photo =
+members.2.photo = なし
 members.2.snsLabel = Instagram
-members.2.snsUrl =
+members.2.snsUrl = なし
 
 
 
@@ -211,13 +243,13 @@ socials.1.enabled = true
 socials.1.label = X
 socials.1.title = 最新情報
 socials.1.text = 公演告知など
-socials.1.url =
+socials.1.url = なし
 
 socials.2.enabled = true
 socials.2.label = YouTube
 socials.2.title = 映像
 socials.2.text = ティザー動画など
-socials.2.url =
+socials.2.url = なし
 
 
 

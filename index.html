@@ -37,10 +37,19 @@
   <header class="header" data-header>
     <div class="container header__inner">
 
-      <!-- ===== 編集ポイント：劇団名（ロゴ文字） ===== -->
+      <!-- ===== 編集ポイント：劇団名（画像ロゴ + 文字ロゴ） ===== -->
       <a class="brand" href="#top" aria-label="トップへ戻る">
-        <span class="brand__jp">劇団〇〇</span>
-        <span class="brand__en">GEKIDAN XX</span>
+        <!--
+          画像ロゴを使う場合：
+          - content/site.def の branding.logo.src に画像パスを書く
+          - 未設定なら hidden のままなので、文字ロゴだけ表示されます
+        -->
+        <img class="brand__mark" src="" alt="" hidden />
+
+        <span class="brand__text">
+          <span class="brand__jp">劇団〇〇</span>
+          <span class="brand__en">GEKIDAN XX</span>
+        </span>
       </a>
 
       <!-- ===== PC表示のナビ（スマホでは非表示になる） ===== -->
