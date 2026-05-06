@@ -1,0 +1,561 @@
+:root{
+  /* ===== 編集ポイント：ここだけ変えると雰囲気が一気に変わる ===== */
+  --bg: #0b0d12;                 /* 背景の基本色 */
+  --panel: rgba(255,255,255,0.06);/* カード背景 */
+  --text: rgba(255,255,255,0.92); /* 文字色 */
+  --muted: rgba(255,255,255,0.68);/* 薄い文字 */
+  --line: rgba(255,255,255,0.12); /* 罫線 */
+  --accent: #B23A3A;             /* 劇団のアクセントカラー（最重要） */
+  --max: 1040px;                 /* コンテンツ横幅 */
+  --r: 18px;                     /* 角丸 */
+
+  /* ===== 編集ポイント：影（プロ感の大事な要素） ===== */
+  --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --shadowSoft: 0 8px 18px rgba(0,0,0,0.22);
+
+  /* ===== 編集ポイント：フォーカス色（キーボード操作の見た目） ===== */
+  --focus: 0 0 0 3px rgba(178,58,58,0.45);
+
+  /* ===== 編集ポイント：ヘッダの下線位置（1ついじるだけで調整できる） ===== */
+  --navUnderlineOffset: 6px; /* 4〜8px で調整 */
+}
+
+/* ===== ベース ===== */
+*{ box-sizing: border-box; }
+html{ scroll-behavior: smooth; }
+body{
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  
+    /* ===== 編集ポイント：暗めを保ちつつ“光”を感じる背景 ===== */
+    background:
+      /* 緑のハイライト：中心で効かせて早めに透明へ（80%→60%） */
+      radial-gradient(900px 520px at 18% -10%, rgba(1, 238, 13, 0.18), transparent 60%),
+  
+      /* 白いハイライト：背景の暗さを持ち上げる */
+      radial-gradient(900px 520px at 82% 10%, rgba(255,255,255,0.12), transparent 55%),
+  
+      /* 下地（ここが暗さの主役） */
+      var(--bg);
+  
+    color: var(--text);
+    line-height: 1.7;
+    text-rendering: optimizeLegibility;
+  }
+
+a{ color: inherit; }
+img{ max-width: 100%; display: block; }
+
+/* ===== 編集ポイント：余白の基本（中央寄せ） ===== */
+.container{ max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+
+/* ===== stickyヘッダー分のズレ対策 ===== */
+section{ scroll-margin-top: 96px; } /* 編集ポイント：ヘッダ高さに合わせて 90〜110px で調整 */
+.anchor{ height: 0; }
+
+/* ===== キーボード用：本文へスキップ ===== */
+.skip{
+  position: absolute;
+  left: 12px; top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(11,13,18,0.95);
+  transform: translateY(-150%);
+  transition: transform .2s ease;
+  text-decoration: none;
+  z-index: 999;
+}
+.skip:focus{ transform: translateY(0); box-shadow: var(--focus); }
+
+/* ===== フォーカス見える化（プロ仕様） ===== */
+:focus-visible{
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: 12px;
+}
+
+/* ===== Header ===== */
+.header{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+  background: rgba(11,13,18,0.65);
+  border-bottom: 1px solid var(--line);
+}
+.header__inner{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 12px;
+}
+
+/* ===== ヘッダ崩れ対策：ロゴとナビが詰まってもレイアウトが壊れないように ===== */
+/* 編集ポイント：ロゴが縮んで欲しくないので固定。ナビは縮んで横スクロールに逃がす */
+.brand{ flex: 0 0 auto; }
+.header__inner{ min-width: 0; }
+.nav{ min-width: 0; }
+
+
+/* ===== ロゴ（文字） ===== */
+.brand{ text-decoration: none; display: grid; gap: 2px; }
+.brand__jp{ font-weight: 900; letter-spacing: 0.02em; }
+.brand__en{ font-size: 12px; color: var(--muted); letter-spacing: 0.18em; }
+
+/* ===== PCナビ ===== */
+.nav{ display: flex; align-items: center; gap: 10px; }
+.nav a{
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.nav a:hover{ background: rgba(255,255,255,0.06); color: var(--text); }
+.nav__cta{
+  background: var(--accent);
+  color: white !important;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+.nav__cta:hover{ filter: brightness(1.05); }
+
+/* =========================================================
+   Header Nav Upgrade（プロ仕様）
+   ① 区切り線（縦線）
+   ② 現在地下線（hover / active）
+   ③ ナビを箱化（高級感）
+   ---------------------------------------------------------
+   編集ポイント：
+   - 角丸：14px（箱）/ 10px（リンク）
+   - 線色：var(--line)
+   - 下線色：var(--accent)
+========================================================= */
+
+/* ③ ナビ全体を“箱”にする（高級感・UI感） */
+.nav{
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  box-shadow: var(--shadowSoft);
+}
+
+/* ①②のために relative を付与 */
+.nav a{ position: relative; }
+
+/* ① 区切り線：2個目以降のリンクの左に縦線を出す */
+.nav a + a{
+  margin-left: 2px;     /* 線と文字の距離 */
+  padding-left: 14px;   /* 線の右側余白 */
+}
+.nav a + a::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 16px;         /* 線の高さ */
+  background: var(--line);
+  opacity: 0.9;
+}
+
+/* ② 下線インジケータ（hover / active） */
+.nav a::after{
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 4px;                /* 下線の位置 */
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 160ms ease;
+  opacity: 0.95;
+}
+.nav a:hover::after{ transform: scaleX(1); }
+.nav a.is-active::after{ transform: scaleX(1); }
+
+/* CTA（お問い合わせ）は“ボタン”として扱う：線＆下線は消す */
+.nav a.nav__cta::before,
+.nav a.nav__cta::after{ display: none; }
+.nav a.nav__cta{ margin-left: 6px; }
+
+
+/* ===== スマホのメニューボタン（PCでは非表示） ===== */
+.navToggle{
+  display: none;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+/* ===== Drawer（スマホメニュー） ===== */
+.drawer{ position: fixed; inset: 0; z-index: 80; }
+.drawer__backdrop{ position: absolute; inset: 0; background: rgba(0,0,0,0.55); }
+.drawer__panel{
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: min(360px, 92vw);
+  background: rgba(11,13,18,0.96);
+  border-left: 1px solid var(--line);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.drawer__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.drawer__title{ letter-spacing: .22em; font-weight: 900; font-size: 12px; color: var(--muted); }
+.drawer__close{
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  border-radius: 12px;
+  width: 40px; height: 40px;
+  font-size: 20px;
+}
+.drawer__links{ padding: 14px 0; display: grid; gap: 8px; }
+.drawer__links a{
+  text-decoration: none;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+.drawer__links a:hover{ background: rgba(255,255,255,0.06); }
+
+/* ===== Drawer：現在地ハイライト（JSが is-active を付与） ===== */
+.drawer__links a.is-active{
+  border-color: rgba(178,58,58,0.55); /* 編集ポイント：強さ */
+  background: rgba(178,58,58,0.10);
+}
+
+.drawer__cta{
+  background: var(--accent) !important;
+  border-color: transparent !important;
+  color: white !important;
+  font-weight: 900;
+}
+.drawer__foot{ color: var(--muted); }
+
+/* ===== Hero ===== */
+.hero{ padding: 56px 0 24px; }
+.hero__inner{
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 26px;
+  align-items: center;
+}
+.badge{
+  display: inline-block;
+  font-size: 20px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.82);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  margin: 0 0 12px;
+}
+.hero__title{
+  font-size: clamp(34px, 4vw, 52px);
+  line-height: 1.1;
+  margin: 0 0 12px;
+}
+.hero__lead{ margin: 0 0 18px; color: var(--muted); font-size: 16px; }
+.hero__note{ margin: 14px 0 0; color: var(--muted); font-size: 12px; }
+
+.hero__meta{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 10px;
+  margin: 16px 0 18px;
+}
+.metaCard{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px;
+}
+.metaCard__label{ font-size: 12px; color: var(--muted); }
+.metaCard__value{ font-weight: 900; margin-top: 4px; }
+
+.hero__actions{ display: flex; gap: 10px; flex-wrap: wrap; }
+.btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-weight: 800;
+  transition: transform .15s ease, filter .15s ease, background .15s ease;
+}
+.btn:hover{ transform: translateY(-1px); }
+.btn--primary{ background: var(--accent); border-color: transparent; color: white; }
+.btn--primary:hover{ filter: brightness(1.05); }
+.btn--ghost:hover{ background: rgba(255,255,255,0.08); }
+.btn--block{ width: 100%; }
+
+.hero__visual{
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 6px);
+  overflow: hidden;
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadowSoft);
+}
+.hero__visual img{ width: 100%; height: 100%; object-fit: cover; }
+.hero__visualPlaceholder{
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.25em;
+  font-weight: 900;
+}
+
+/* ===== Sections ===== */
+.section{ padding: 42px 0; }
+/* 編集ポイント：sectionの交互背景を控えめに */
+.section--alt{
+  background: rgba(255,255,255,0.012); /* 0.02 → 0.012 くらいに */
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.section__head{ margin-bottom: 16px; }
+.section__title{ margin: 0; font-size: 22px; letter-spacing: 0.02em; }
+.section__sub{ margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+.mt{ margin-top: 12px; }
+
+.grid{ display: grid; gap: 12px; }
+.grid--2{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+.grid--3{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+
+.card{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.card--tight{ padding: 14px; }
+.card--hover:hover{
+  transform: translateY(-3px);
+  box-shadow: var(--shadowSoft);
+  background: rgba(255,255,255,0.08);
+}
+.card__title{ margin: 0 0 8px; font-size: 16px; }
+.card__text{ margin: 0; color: rgba(255,255,255,0.80); }
+.note{ margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+
+.tagRow{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tag{
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* =========================================================
+   List（沿革など：年 + 内容）
+   - 以前の flex + space-between は、左右が離れすぎて
+     「文字間が広い」ように見えることがあるため
+     グリッドで“年カラム”を固定して整列させます。
+   - ここは沿革以外にも「キー：値」の行に流用できます。
+   ========================================================= */
+
+.list{
+  /* ===== 編集ポイント：年の列幅（2025が収まる程度） ===== */
+  --year-col: 4.5em;
+
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid; /* li を縦に積む */
+}
+
+/* 1行（年 + 内容） */
+.list li{
+  display: grid;
+  grid-template-columns: var(--year-col) 1fr; /* 左：年 / 右：内容 */
+  column-gap: 60px; /* ===== 編集ポイント：年と内容の間隔 ===== */
+  align-items: baseline; /* 数字と文字の高さを揃えて読みやすく */
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.16);
+}
+
+.list li:last-child{
+  border-bottom: 0; /* 最後の線は消す（すっきり） */
+  padding-bottom: 0;
+}
+
+.list__key{
+  color: var(--muted);
+  font-variant-numeric: tabular-nums; /* 年が揃って見える（プロ感） */
+}
+
+.list__val{
+  font-weight: 800;
+
+  /* ===== 編集ポイント：右寄せにしたい場合 =====
+     右側の文字を揃えると“表”っぽく見えます。
+     ただし、広い画面だと離れすぎて見える場合があるので
+     まずは左寄せ（デフォルト）がおすすめです。 */
+  /* text-align: right; */
+
+  min-width: 0; /* 長文がある時に崩れないための保険 */
+}
+
+/* ===== スマホ：年列と間隔を少し詰める ===== */
+@media (max-width: 520px){
+  .list{ --year-col: 4.0em; }
+  .list li{ column-gap: 14px; }
+}
+
+.link{ color: rgba(255,255,255,0.86); }
+.link:hover{ color: white; text-decoration: underline; }
+
+.news__date{ margin: 0 0 6px; color: var(--muted); font-size: 12px; }
+
+/* ===== Members ===== */
+.member{ text-align: center; }
+.avatar{
+  width: 72px; height: 72px;
+  border-radius: 999px;
+  margin: 4px auto 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04));
+  border: 1px solid var(--line);
+}
+
+/* ===== Social ===== */
+.social{
+  text-decoration: none;
+  display: block;
+}
+.social__label{
+  margin: 0 0 6px;
+
+  /* ===== 編集ポイント：X / YouTube の文字サイズ ===== */
+  font-size: 18px;            /* 12 → 14〜16 あたりが見やすい */
+
+  /* ===== 編集ポイント：見出し感を少し強くする ===== */
+  font-weight: 900;           /* なくてもOK（強すぎたら 800） */
+  letter-spacing: .14em;      /* 広すぎると逆に間延びするので少し詰める */
+
+  color: var(--muted);}
+.social__title{
+  margin: 0 0 6px;
+
+  /* ===== 編集ポイント：SNSカードのメイン見出し ===== */
+  font-size: 16px;  /* 16 → 17〜18 */
+
+  font-weight: 900; /* タイトル感（任意） */
+}
+.social__go{
+  margin: 12px 0 0;
+  font-weight: 800;
+  color: rgba(255,255,255,0.86);
+}
+
+/* ===== Footer ===== */
+.footer{ padding: 26px 0; border-top: 1px solid var(--line); }
+.footer__inner{
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.footer__brand{ font-weight: 900; }
+.footer__small{ color: var(--muted); font-size: 12px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 920px){
+  .hero__inner{ grid-template-columns: 1fr; }
+  .hero__meta{ grid-template-columns: 1fr; }
+  .grid--3{ grid-template-columns: 1fr; }
+  .grid--2{ grid-template-columns: 1fr; }
+  .gallery{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  .nav{ display: none; }
+  .navToggle{ display: inline-flex; }
+}
+
+/* ===== プロ仕様：動きを減らす設定を尊重 ===== */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior: auto; }
+  *{ transition: none !important; }
+}
+
+
+/* =========================================================
+   Pro polish pack（余白・見出し・カード整形）
+   目的：
+   - #news / #schedule へ飛んだ時に“ヘッダに隠れない”
+   - セクション間の“呼吸”を作って高級感を上げる
+   - News / Schedule のカードを揃えて“整ってる感”を出す
+
+   編集ポイント：
+   - 余白を詰めたい：.section の padding を下げる（54→48など）
+   - Newsカードの高さ：.newsGrid .card の min-height を調整
+   - Scheduleカードの高さ：.scheduleGrid .card の min-height を調整
+========================================================= */
+
+/* ===== セクション余白（全体の品） ===== */
+.section{
+  padding: 54px 0; /* 編集ポイント：48〜64px で好み調整 */
+}
+
+/* ===== 見出し階層の統一（公式サイト感） ===== */
+.section__head{ margin-bottom: 18px; }
+.section__title{
+  font-size: 24px;       /* 編集ポイント：22→24で“見出し感”UP */
+  letter-spacing: 0.03em;
+}
+.section__sub{
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+/* ===== News：3カードが“同じ高さ”に見えると一気にプロ ===== */
+.newsGrid .card{
+  min-height: 120px; /* 編集ポイント：120〜140 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ===== Schedule：カードがバラつくと素人感が出るので最低限揃える ===== */
+.scheduleGrid .card{
+  min-height: 140px; /* 編集ポイント：140〜170 */
+}
+
+
+/* =========================================================
+   Avatar（メンバー写真）
+   - JSが .has-photo を付けたときだけ写真表示に切り替える
+   - 画像は background-image で当てる（HTMLを増やさず運用が簡単）
+========================================================= */
+.avatar.has-photo{
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
