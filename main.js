@@ -73,18 +73,53 @@ const rafThrottle = (fn) => {
   // Drawer内リンク（押したら閉じる）
   const drawerLinks = $$("a", drawer);
 
+  // ===== アクセシビリティ用：Drawer内でTab移動を閉じ込める =====
+  // 初心者メモ：
+  // - Drawerを開いたままTabキーを押したとき、背景ページのリンクへ移動すると迷子になります。
+  // - そのため「閉じるボタン」「Drawer内リンク」だけを順番に移動できるようにします。
+  const focusableSelector = [
+    "a[href]",
+    "button:not([disabled])",
+    "textarea:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(",");
+  let lastFocusedEl = null;
+
+  const getFocusableEls = () =>
+    $$(focusableSelector, drawer).filter((el) => !el.hasAttribute("disabled"));
+
   function openDrawer() {
+    // 開く前にフォーカスされていた要素を覚えておく。
+    // 閉じたあと、メニューボタンへ自然に戻すため。
+    lastFocusedEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
     drawer.hidden = false;
     toggle.setAttribute("aria-expanded", "true");
 
     // ===== 編集ポイント：背景スクロール禁止 =====
     if (CONFIG.lockBodyScroll) document.body.style.overflow = "hidden";
+
+    // Drawerが開いたら、まず閉じるボタンへフォーカスを移す。
+    // キーボードだけで操作している人にも「メニューが開いた」と伝わりやすい。
+    requestAnimationFrame(() => {
+      const first = getFocusableEls()[0];
+      if (first) first.focus();
+    });
   }
 
-  function closeDrawer() {
+  function closeDrawer(options = {}) {
+    const { restoreFocus = true } = options;
+
     drawer.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
     if (CONFIG.lockBodyScroll) document.body.style.overflow = "";
+
+    // ESCや×ボタンで閉じたときは、開く前の場所へフォーカスを戻す。
+    // リンクを押して閉じる場合は、移動先を邪魔しないよう restoreFocus:false にする。
+    if (restoreFocus && lastFocusedEl) lastFocusedEl.focus();
+    lastFocusedEl = null;
   }
 
   // トグルボタン：開閉
@@ -97,11 +132,36 @@ const rafThrottle = (fn) => {
   closeEls.forEach((el) => el.addEventListener("click", closeDrawer));
 
   // Drawer内リンク：押したら閉じる（遷移の邪魔をしない）
-  drawerLinks.forEach((a) => a.addEventListener("click", closeDrawer));
+  drawerLinks.forEach((a) => a.addEventListener("click", () => closeDrawer({ restoreFocus: false })));
 
-  // ESCキーで閉じる（プロ仕様）
+  // ESCキーで閉じる / TabキーをDrawer内に閉じ込める（プロ仕様）
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !drawer.hidden) closeDrawer();
+    if (drawer.hidden) return;
+
+    if (e.key === "Escape") {
+      closeDrawer();
+      return;
+    }
+
+    if (e.key !== "Tab") return;
+
+    const focusableEls = getFocusableEls();
+    if (focusableEls.length === 0) return;
+
+    const first = focusableEls[0];
+    const last = focusableEls[focusableEls.length - 1];
+
+    // Shift + Tab で先頭より前へ行きそうなら最後へ戻す
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    }
+
+    // Tab で最後より後ろへ行きそうなら先頭へ戻す
+    if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   });
 })();
 
@@ -271,6 +331,8 @@ function parseDef(text) {
     return s;
   };
 
+  const isIndexPart = (part) => /^\d+$/.test(part);
+
   const setByPath = (obj, key, value) => {
     const parts = key.split(".").map((p) => p.trim()).filter(Boolean);
     if (parts.length === 0) return;
@@ -280,9 +342,12 @@ function parseDef(text) {
       const part = parts[i];
       const isLast = i === parts.length - 1;
       const next = parts[i + 1];
-      const nextIsIndex = next != null && /^\d+$/.test(next);
+      const nextIsIndex = next != null && isIndexPart(next);
 
-      if (/^\d+$/.test(part)) {
+      // 数字だけのキー（例：news.1.title の「1」）は配列の番号として扱う。
+      // site.defでは人間が分かりやすいように 1 始まり、JS内部では 0 始まりに変換。
+      if (isIndexPart(part)) {
+        if (!Array.isArray(cur)) return;
         const idx = Math.max(0, parseInt(part, 10) - 1);
         while (cur.length <= idx) cur.push({});
         if (isLast) cur[idx] = value;
@@ -299,9 +364,28 @@ function parseDef(text) {
       }
 
       if (nextIsIndex) {
-        if (!Array.isArray(cur[part])) cur[part] = [];
+        const existing = cur[part];
+
+        // 初心者向けメモ：
+        // schedule.sub と schedule.1.date のように、
+        // 「説明文」と「一覧」が同じ schedule の中に混ざることがあります。
+        //
+        // その場合、schedule を配列に置き換えると sub/note が消えてしまうため、
+        // 既にオブジェクトなら schedule.items に一覧を入れます。
+        if (Array.isArray(existing)) {
+          // news.1.title のような「一覧だけ」の項目は、そのまま配列として扱う。
+        } else if (existing && typeof existing === "object") {
+          if (!Array.isArray(existing.items)) existing.items = [];
+          cur = existing.items;
+          continue;
+        } else {
+          cur[part] = [];
+        }
       } else {
-        if (cur[part] == null || typeof cur[part] !== "object" || Array.isArray(cur[part])) cur[part] = {};
+        // もし先に schedule.1.date が読まれて schedule が配列になっていても、
+        // 後から schedule.sub を読めるように { items: 配列 } へ包み直す。
+        if (Array.isArray(cur[part])) cur[part] = { items: cur[part] };
+        else if (cur[part] == null || typeof cur[part] !== "object") cur[part] = {};
       }
       cur = cur[part];
     }
@@ -326,6 +410,23 @@ function parseDef(text) {
 function normalizeState(raw) {
   const state = raw && typeof raw === "object" ? raw : {};
 
+  // site.def の「news.1」「members.1」のような番号付き項目を、
+  // 画面表示しやすい配列へそろえるための小さな補助関数。
+  //
+  // 例：
+  // - news.1.title        → raw.news は配列になる
+  // - schedule.sub + schedule.1.title → raw.schedule.items が配列になる
+  //
+  // この2パターンを同じように扱えるようにしておくと、編集順が変わっても壊れにくい。
+  const listFrom = (value) => {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object" && Array.isArray(value.items)) return value.items;
+    return [];
+  };
+
+  const objectFrom = (value) =>
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
   state.hero = state.hero || {};
   const metaCards = [];
   for (let i = 1; i <= 3; i++) {
@@ -342,10 +443,10 @@ function normalizeState(raw) {
   state.hero.keyVisual = state.hero.keyVisual || {};
 
   state.about = state.about || {};
-  const history = Array.isArray(state.history) ? state.history : [];
+  const history = listFrom(state.history);
   state.about.history = history.filter((h) => h && typeof h === "object").map((h) => ({ year: String(h.year ?? "").trim(), text: String(h.text ?? "").trim() }));
 
-  state.news = Array.isArray(state.news) ? state.news : [];
+  state.news = listFrom(state.news);
   state.news = state.news.filter((n) => n && typeof n === "object").map((n) => ({
     date: String(n.date ?? "").trim(),
     title: String(n.title ?? "").trim(),
@@ -353,9 +454,9 @@ function normalizeState(raw) {
     url: String(n.url ?? "").trim(),
   })).filter((n) => n.date || n.title || n.text || n.url);
 
-  state.schedule = state.schedule && typeof state.schedule === "object" ? state.schedule : {};
-  state.schedule.items = Array.isArray(state.schedule.items) ? state.schedule.items : [];
-  if (Array.isArray(raw?.schedule)) state.schedule.items = raw.schedule;
+  const scheduleRaw = state.schedule;
+  state.schedule = objectFrom(scheduleRaw);
+  state.schedule.items = listFrom(scheduleRaw);
   state.schedule.items = state.schedule.items.filter((x) => x && typeof x === "object").map((x) => ({
     date: String(x.date ?? "").trim(),
     title: String(x.title ?? "").trim(),
@@ -364,7 +465,7 @@ function normalizeState(raw) {
     url: String(x.url ?? "").trim(),
   })).filter((x) => x.date || x.title || x.place || x.note || x.url);
 
-  state.members = Array.isArray(state.members) ? state.members : [];
+  state.members = listFrom(state.members);
   state.members = state.members.filter((m) => m && typeof m === "object").map((m) => ({
     enabled: m.enabled === false ? false : true,
     name: String(m.name ?? "").trim(),
@@ -375,9 +476,9 @@ function normalizeState(raw) {
     snsUrl: String(m.snsUrl ?? "").trim(),
   })).filter((m) => m.name || m.role || m.note || m.photo || m.snsUrl);
 
-  state.socials = state.socials && typeof state.socials === "object" ? state.socials : {};
-  state.socials.items = Array.isArray(state.socials.items) ? state.socials.items : [];
-  if (Array.isArray(raw?.socials)) state.socials = { sub: "", items: raw.socials };
+  const socialsRaw = state.socials;
+  state.socials = objectFrom(socialsRaw);
+  state.socials.items = listFrom(socialsRaw);
   state.socials.items = (state.socials.items || []).filter((s) => s && typeof s === "object").map((s) => ({
     enabled: s.enabled === true || s.enabled === "true" || s.enabled === 1 || s.enabled === "1",
     label: String(s.label ?? "").trim(),
@@ -412,6 +513,58 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function textToHtmlWithBreaks(s) {
+  // 初心者向けメモ：
+  // textContent は安全ですが、改行を <br> として表示できません。
+  // innerHTML は便利ですが、そのまま入れるとHTMLタグも実行されて危険です。
+  //
+  // そこで「先に escapeHtml で安全化 → 改行だけ <br> に変換」の順番にしています。
+  // site.def 側で「\n」と書いても改行として扱えるようにしています。
+  return escapeHtml(String(s ?? "").replace(/\\n/g, "\n")).replace(/\r?\n/g, "<br />");
+}
+
+function safeUrl(url) {
+  const s = String(url ?? "").trim();
+  if (!s) return "";
+
+  // ページ内リンク（#contact など）は許可。
+  if (s.startsWith("#")) return s;
+
+  try {
+    const parsed = new URL(s, window.location.href);
+    const allowedProtocols = ["http:", "https:", "mailto:"];
+    const isRelativePath = s.startsWith("/") || s.startsWith("./") || s.startsWith("../");
+
+    // javascript: のような危険なURLを href に入れないための保険。
+    if (isRelativePath || allowedProtocols.includes(parsed.protocol)) return s;
+  } catch (e) {
+    // URLとして解釈できない文字列は使わない。
+  }
+
+  console.warn(`[site.def] 安全ではないURLを無視しました: ${s}`);
+  return "";
+}
+
+function isExternalUrl(url) {
+  return /^https?:\/\//i.test(String(url || ""));
+}
+
+function cssUrl(url) {
+  // background-image にURLを入れる時の最低限のエスケープ。
+  // 画像URLは safeUrl を通したあと、CSS文字列として壊れないようにここも通す。
+  return String(url ?? "").replace(/["\\\n\r]/g, "\\$&");
+}
+
+function linkHtml(label, url) {
+  // innerHTMLでリンクを作る場所を1箇所にまとめる。
+  // こうしておくと、あとから安全ルールを変えたい時もここだけ直せばOK。
+  const href = safeUrl(url);
+  if (!href) return escapeHtml(label);
+
+  const target = isExternalUrl(href) ? ' target="_blank" rel="noopener"' : "";
+  return `<a class="link" href="${escapeHtml(href)}"${target}>${escapeHtml(label)}</a>`;
 }
 
 function applyStateToDom(state) {
@@ -452,7 +605,7 @@ function applyStateToDom(state) {
 
   if (heroBadge && state.hero?.badge) heroBadge.textContent = state.hero.badge;
   if (heroTitle && state.hero?.title) heroTitle.textContent = state.hero.title;
-  if (heroLead && state.hero?.lead != null) heroLead.innerHTML = String(state.hero.lead || "").replace(/\n/g, "<br />");
+  if (heroLead && state.hero?.lead != null) heroLead.innerHTML = textToHtmlWithBreaks(state.hero.lead);
 
   if (heroMetaCards.length && Array.isArray(state.hero?.metaCards)) {
     state.hero.metaCards.slice(0, heroMetaCards.length).forEach((m, i) => {
@@ -467,11 +620,12 @@ function applyStateToDom(state) {
   if (heroActions) {
     heroActions.innerHTML = "";
     const addBtn = (label, url, primary) => {
-      if (!label || !url) return;
+      const href = safeUrl(url);
+      if (!label || !href) return;
       const a = document.createElement("a");
       a.className = primary ? "btn btn--primary" : "btn btn--ghost";
-      a.href = url;
-      if (/^https?:\/\//.test(url)) { a.target = "_blank"; a.rel = "noopener"; }
+      a.href = href;
+      if (isExternalUrl(href)) { a.target = "_blank"; a.rel = "noopener"; }
       a.textContent = label;
       heroActions.appendChild(a);
     };
@@ -483,7 +637,7 @@ function applyStateToDom(state) {
 
   const visual = document.querySelector(".hero__visual");
   if (visual) {
-    const src = state.hero?.keyVisual?.src ? normalizeImageUrl(state.hero.keyVisual.src) : "";
+    const src = state.hero?.keyVisual?.src ? safeUrl(normalizeImageUrl(state.hero.keyVisual.src)) : "";
     const alt = state.hero?.keyVisual?.alt || state.hero?.title || "";
     if (src) {
       const ph = visual.querySelector(".hero__visualPlaceholder");
@@ -503,7 +657,7 @@ function applyStateToDom(state) {
       art.className = "card card--hover";
       art.innerHTML = `
         <p class="news__date">${escapeHtml(n.date)}</p>
-        <h3 class="card__title">${n.url ? `<a class="link" href="${escapeHtml(n.url)}" target="_blank" rel="noopener">${escapeHtml(n.title)}</a>` : escapeHtml(n.title)}</h3>
+        <h3 class="card__title">${linkHtml(n.title, n.url)}</h3>
         <p class="card__text">${escapeHtml(n.text)}</p>
       `.trim();
       newsGrid.appendChild(art);
@@ -526,20 +680,26 @@ function applyStateToDom(state) {
       art.className = "card";
       art.innerHTML = `
         <p class="news__date">${escapeHtml(it.date)}</p>
-        <h3 class="card__title">${it.url ? `<a class="link" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>` : escapeHtml(it.title)}</h3>
+        <h3 class="card__title">${linkHtml(it.title, it.url)}</h3>
         <p class="card__text">${body}</p>
       `.trim();
       scheduleGrid.appendChild(art);
     });
 
-    const existNote = document.querySelector("#schedule [data-schedule-note]");
-    if (existNote) existNote.remove();
+    // 注意書きはHTMLにも仮文があるため、追加ではなく「差し替え」にする。
+    // 追加してしまうと、site.def 読み込み後に同じ注意書きが2つ並ぶことがあります。
+    const existingNote =
+      document.querySelector("#schedule [data-schedule-note]") ??
+      document.querySelector("#schedule .note");
+
     if (state.schedule?.note) {
-      const p = document.createElement("p");
+      const p = existingNote || document.createElement("p");
       p.className = "note";
       p.setAttribute("data-schedule-note", "true");
       p.textContent = state.schedule.note;
-      scheduleGrid.parentElement?.appendChild(p);
+      if (!existingNote) scheduleGrid.parentElement?.appendChild(p);
+    } else if (existingNote) {
+      existingNote.remove();
     }
   }
 
@@ -569,19 +729,24 @@ function applyStateToDom(state) {
   if (membersGrid && Array.isArray(state.members)) {
     membersGrid.innerHTML = "";
     state.members.filter((m) => m.enabled !== false).forEach((m) => {
-      const src = m.photo ? normalizeImageUrl(m.photo) : "";
-      const sns = m.snsUrl ? `<a class="link" href="${escapeHtml(m.snsUrl)}" target="_blank" rel="noopener">${escapeHtml(m.snsLabel || "SNS")}</a>` : "";
-      const avStyle = src ? ` style="background-image:url('${escapeHtml(src)}')"` : "";
+      const src = m.photo ? safeUrl(normalizeImageUrl(m.photo)) : "";
+      const sns = m.snsUrl ? linkHtml(m.snsLabel || "SNS", m.snsUrl) : "";
       const avClass = src ? "avatar has-photo" : "avatar";
       const art = document.createElement("article");
       art.className = "card member card--hover";
       art.innerHTML = `
-        <div class="${avClass}" aria-hidden="true"${avStyle}></div>
+        <div class="${avClass}" aria-hidden="true"></div>
         <h3 class="member__name">${escapeHtml(m.name)}</h3>
         <p class="member__role">${escapeHtml(m.role)}</p>
         <p class="member__note">${escapeHtml(m.note)}</p>
         ${sns}
       `.trim();
+
+      // 写真URLはHTML文字列へ直接入れず、styleプロパティで設定する。
+      // 初心者メモ：URLや文章は「どこへ入れるか」で安全な書き方が変わります。
+      const avatar = art.querySelector(".avatar");
+      if (avatar && src) avatar.style.backgroundImage = `url("${cssUrl(src)}")`;
+
       membersGrid.appendChild(art);
     });
   }
@@ -592,18 +757,24 @@ function applyStateToDom(state) {
     if (sub && state.socials?.sub != null) sub.textContent = state.socials.sub;
     socialsGrid.innerHTML = "";
     state.socials.items.filter((s) => s.enabled).forEach((s) => {
-      const a = document.createElement("a");
-      a.className = "social card card--hover";
-      a.href = s.url || "#";
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.innerHTML = `
+      const href = safeUrl(s.url);
+      const card = document.createElement(href ? "a" : "article");
+      card.className = "social card card--hover";
+
+      // URLが空のときは、クリックできないカードとして表示する。
+      // href="#" にすると、初心者が「リンクできている」と誤解しやすいため。
+      if (href) {
+        card.href = href;
+        if (isExternalUrl(href)) { card.target = "_blank"; card.rel = "noopener"; }
+      }
+
+      card.innerHTML = `
         <p class="social__label">${escapeHtml(s.label)}</p>
         <h3 class="social__title">${escapeHtml(s.title)}</h3>
         <p class="card__text">${escapeHtml(s.text)}</p>
-        <p class="social__go">見に行く →</p>
+        <p class="social__go">${href ? "見に行く →" : "URL準備中"}</p>
       `.trim();
-      socialsGrid.appendChild(a);
+      socialsGrid.appendChild(card);
     });
   }
 

@@ -14,6 +14,8 @@
 ; 4) 行の先頭が「;」の行は説明なので消してもOK
 ; 5) 文字は日本語OK
 ; 6) 画像URLはGoogleDriveの共有URLを貼る
+; 7) URLがまだ無い項目は空のままでOK
+; 8) 文章を改行したいときは「\n」と書く（例：1行目\n2行目）
 ;
 ; ▼ 保存方法
 ; 編集したら保存 → GitHubにアップロード → 反映
@@ -65,11 +67,12 @@ hero.badge = NEXT STAGE
 hero.title = 『作品タイトル』
 
 ; キャッチコピー（1～2行）
+; 改行したい場合：hero.lead = 1行目\n2行目
 hero.lead = ここにキャッチコピーを書きます。
 
 ; ===== 日程カード =====
 hero.meta1.label = 日程
-hero.meta1.value = 2026.03.14–02.16
+hero.meta1.value = 2026.03.14–03.16
 
 ; ===== 会場カード =====
 hero.meta2.label = 会場
@@ -81,6 +84,7 @@ hero.meta3.value = 前売 ¥3,500
 
 ; ===== ボタン1 =====
 ; URLを消すとボタンは表示されません
+; 予約フォームが未定なら、いったん空にしてOKです
 hero.reserve.label = チケット予約
 hero.reserve.url = https://example.com
 
@@ -110,6 +114,10 @@ hero.keyVisual.alt =
 ; news.3.title =
 ; news.3.text =
 ; news.3.url =
+;
+; ▼ URLがある場合
+; news.3.url = https://example.com/news
+; URLが空なら、見出しはリンクなしの普通の文字になります
 
 news.1.date = 2026-03-01
 news.1.title = 次回公演の情報を公開しました
@@ -172,6 +180,8 @@ history.2.text = 第1回公演『〇〇』
 
 ; enabled = true なら表示
 ; false にすると非表示
+; photo にはGoogleDrive画像URLを貼れます
+; snsUrl が空ならSNSリンクは表示されません
 
 members.1.enabled = true
 members.1.name = 山田太郎
