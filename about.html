@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja" data-title-prefix="劇団について">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>劇団について｜劇団〇〇</title>
+  <meta name="description" content="劇団〇〇のコンセプト、沿革、メンバー補足。" />
+  <meta name="theme-color" content="#f7f1e7" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <a class="skip" href="#main">本文へスキップ</a>
+
+  <header class="header" data-header>
+    <div class="container header__inner">
+      <a class="brand" href="./index.html#top" aria-label="トップへ戻る">
+        <img class="brand__mark" src="" alt="" hidden />
+        <span class="brand__text">
+          <span class="brand__jp">劇団〇〇</span>
+          <span class="brand__en">GEKIDAN XX</span>
+        </span>
+      </a>
+
+      <nav class="nav" aria-label="グローバルナビゲーション">
+        <a href="./index.html#about">トップ</a>
+        <a href="./index.html#show">次回公演</a>
+        <a href="./news.html">お知らせ</a>
+        <a href="./index.html#past">過去公演</a>
+        <a href="./index.html#contact" class="nav__cta">お問い合わせ</a>
+      </nav>
+
+      <button class="navToggle" id="navToggle" aria-expanded="false" aria-controls="navDrawer">
+        メニュー
+      </button>
+    </div>
+  </header>
+
+  <div class="drawer" id="navDrawer" hidden>
+    <div class="drawer__backdrop" data-close-drawer></div>
+    <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="メニュー">
+      <div class="drawer__head">
+        <div class="drawer__title">MENU</div>
+        <button class="drawer__close" data-close-drawer aria-label="メニューを閉じる">×</button>
+      </div>
+      <div class="drawer__links">
+        <a href="./index.html#about">トップ</a>
+        <a href="./index.html#show">次回公演</a>
+        <a href="./news.html">お知らせ</a>
+        <a href="./index.html#past">過去公演</a>
+        <a href="./index.html#contact" class="drawer__cta">お問い合わせ</a>
+      </div>
+      <div class="drawer__foot">
+        <small>© 2026 Gekidan XX</small>
+      </div>
+    </div>
+  </div>
+
+  <main id="main">
+    <section class="pageHero">
+      <div class="container">
+        <p class="section__eyebrow">ABOUT</p>
+        <h1 class="pageHero__title">劇団について</h1>
+        <p class="section__sub">
+          トップページでは短く伝え、ここではコンセプトや沿革、メンバー情報を補足として見られるようにしています。
+        </p>
+      </div>
+    </section>
+
+    <!--
+      ABOUT本体
+      content/site.def の about.* と history.* で内容が差し替わります。
+    -->
+    <section class="section" id="about">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__eyebrow">PROFILE</p>
+          <h2 class="section__title">大切にしていること</h2>
+          <p class="section__sub">「何を大事にする劇団か」を一言で。</p>
+        </div>
+
+        <div class="aboutGrid">
+          <article class="card">
+            <h3 class="card__title">コンセプト</h3>
+            <p class="card__text">
+              例：日常のすぐ横にある感情を、静かに、でも確かな言葉で立ち上げる。
+            </p>
+          </article>
+
+          <article class="card">
+            <h3 class="card__title">沿革</h3>
+            <ul class="list">
+              <li><span class="list__key">20xx</span><span class="list__val">劇団結成</span></li>
+              <li><span class="list__key">20xx</span><span class="list__val">第1回公演『〇〇』</span></li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!--
+      メンバー補足
+      - トップページからは外しています。
+      - content/site.def の members.* は削除せず、ここで表示できます。
+      - 表示したくない人は site.def の members.n.enabled = false にします。
+    -->
+    <section class="section section--soft" id="members">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__eyebrow">MEMBERS</p>
+          <h2 class="section__title">メンバーについて</h2>
+          <p class="section__sub">
+            必要に応じて公開できる補足情報です。写真やSNSは本人の掲載許可を確認してから使ってください。
+          </p>
+        </div>
+
+        <div class="grid grid--3 membersGrid">
+          <article class="card member">
+            <div class="avatar" aria-hidden="true"></div>
+            <h3 class="member__name">〇〇</h3>
+            <p class="member__role">役者</p>
+            <p class="member__note">一言コメント。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container footer__inner">
+        <div>
+          <div class="footer__brand">劇団〇〇</div>
+          <div class="footer__small">© 2026 Gekidan XX. All rights reserved.</div>
+        </div>
+        <a class="textLink" href="./index.html#top">トップへ戻る</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="./main.js"></script>
+</body>
+</html>

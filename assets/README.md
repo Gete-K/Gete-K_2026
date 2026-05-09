@@ -26,6 +26,8 @@ assets/
     members/
       member-01.jpg
       member-02.jpg
+    past/
+      stage-2024.jpg
     keyvisual.jpg
     ogp.jpg
 ```

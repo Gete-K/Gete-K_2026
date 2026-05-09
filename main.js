@@ -477,6 +477,17 @@ function normalizeState(raw) {
     url: String(x.url ?? "").trim(),
   })).filter((x) => x.date || x.title || x.place || x.note || x.url);
 
+  const pastRaw = state.past;
+  state.past = objectFrom(pastRaw);
+  state.past.items = listFrom(pastRaw);
+  state.past.items = state.past.items.filter((x) => x && typeof x === "object").map((x) => ({
+    year: String(x.year ?? "").trim(),
+    title: String(x.title ?? "").trim(),
+    text: String(x.text ?? "").trim(),
+    photo: String(x.photo ?? "").trim(),
+    url: String(x.url ?? "").trim(),
+  })).filter((x) => x.year || x.title || x.text || x.photo || x.url);
+
   state.members = listFrom(state.members);
   state.members = state.members.filter((m) => m && typeof m === "object").map((m) => ({
     enabled: m.enabled === false ? false : true,
@@ -513,6 +524,7 @@ function normalizeState(raw) {
   ["src","alt"].forEach(k => toStr(state.branding.logo,k));
   ["sub","conceptTitle","concept","historyTitle"].forEach(k => toStr(state.about,k));
   ["sub","note"].forEach(k => toStr(state.schedule,k));
+  ["sub"].forEach(k => toStr(state.past,k));
   ["sub","email"].forEach(k => toStr(state.contact,k));
   ["brand","small"].forEach(k => toStr(state.footer,k));
   if (state.hero.reserve) { toStr(state.hero.reserve, "label"); toStr(state.hero.reserve, "url"); }
@@ -586,15 +598,19 @@ function linkHtml(label, url) {
 }
 
 function applyStateToDom(state) {
-  const allowedThemes = ["theater-classic", "black-gold", "literary-green", "pop-red"];
-  const palette = state.theme?.palette || "theater-classic";
+  const allowedThemes = ["soft-cream", "theater-classic", "black-gold", "literary-green", "pop-red"];
+  const palette = state.theme?.palette || "soft-cream";
 
   // 初心者向けメモ：
   // CSS側に用意した配色プリセット名だけを許可しています。
   // site.def の theme.palette に違う文字を書いても、標準テーマに戻るので安心です。
-  document.documentElement.dataset.theme = allowedThemes.includes(palette) ? palette : "theater-classic";
+  document.documentElement.dataset.theme = allowedThemes.includes(palette) ? palette : "soft-cream";
 
-  if (state.meta?.siteTitle) document.title = state.meta.siteTitle;
+  if (state.meta?.siteTitle) {
+    const pagePrefix = document.documentElement.dataset.titlePrefix || "";
+    const siteName = state.branding?.troupeNameJp || state.meta.siteTitle;
+    document.title = pagePrefix ? `${pagePrefix}｜${siteName}` : state.meta.siteTitle;
+  }
 
   const setMeta = (selector, attr, value) => {
     const el = document.querySelector(selector);
@@ -641,13 +657,19 @@ function applyStateToDom(state) {
     }
   }
 
-  const heroBadge = document.querySelector(".hero .badge");
-  const heroTitle = document.querySelector(".hero__title");
+  const heroBrandTitle = document.querySelector("[data-brand-title]");
+  const heroBrandEn = document.querySelector("[data-brand-en]");
+  const heroBadge = document.querySelector(".hero .badge:not([data-brand-en])");
+  const heroTitle = document.querySelector(".hero__title:not([data-brand-title])");
   const heroLead = document.querySelector(".hero__lead");
   const heroNote = document.querySelector(".hero__note");
-  const heroActions = document.querySelector(".hero__actions");
+  const heroActions = document.querySelector("[data-hero-actions]");
   const heroMetaCards = Array.from(document.querySelectorAll(".hero__meta .metaCard"));
 
+  // トップの大きな見出しは「劇団名」を出します。
+  // 次回公演タイトルは下の #show に出すので、site.def の hero.title の意味は変えません。
+  if (heroBrandTitle && state.branding?.troupeNameJp) heroBrandTitle.textContent = state.branding.troupeNameJp;
+  if (heroBrandEn && state.branding?.troupeNameEn) heroBrandEn.textContent = state.branding.troupeNameEn;
   if (heroBadge && state.hero?.badge) heroBadge.textContent = state.hero.badge;
   if (heroTitle && state.hero?.title) heroTitle.textContent = state.hero.title;
   if (heroLead && state.hero?.lead != null) heroLead.innerHTML = textToHtmlWithBreaks(state.hero.lead);
@@ -680,6 +702,41 @@ function applyStateToDom(state) {
 
   if (heroNote && state.hero?.note != null) heroNote.textContent = String(state.hero.note || "");
 
+  const showSec = document.querySelector("#show");
+  if (showSec) {
+    const showEyebrow = showSec.querySelector(".section__eyebrow");
+    const showTitle = showSec.querySelector("[data-show-title]");
+    const showDate = showSec.querySelector("[data-show-date]");
+    const showPlace = showSec.querySelector("[data-show-place]");
+    const showPrice = showSec.querySelector("[data-show-price]");
+    const showNote = showSec.querySelector("[data-show-note]");
+    const showActions = showSec.querySelector("[data-show-actions]");
+    const cards = Array.isArray(state.hero?.metaCards) ? state.hero.metaCards : [];
+
+    if (showEyebrow && state.hero?.badge) showEyebrow.textContent = state.hero.badge;
+    if (showTitle && state.hero?.title) showTitle.textContent = state.hero.title;
+    if (showDate && cards[0]?.value) showDate.textContent = cards[0].value;
+    if (showPlace && cards[1]?.value) showPlace.textContent = cards[1].value;
+    if (showPrice && cards[2]?.value) showPrice.textContent = cards[2].value;
+    if (showNote && state.hero?.note != null) showNote.textContent = String(state.hero.note || "");
+
+    if (showActions) {
+      showActions.innerHTML = "";
+      const addBtn = (label, url, primary) => {
+        const href = safeUrl(url);
+        if (!label || !href) return;
+        const a = document.createElement("a");
+        a.className = primary ? "btn btn--primary" : "btn btn--ghost";
+        a.href = href;
+        if (isExternalUrl(href)) { a.target = "_blank"; a.rel = "noopener"; }
+        a.textContent = label;
+        showActions.appendChild(a);
+      };
+      addBtn(state.hero?.reserve?.label, state.hero?.reserve?.url, true);
+      addBtn(state.hero?.detail?.label, state.hero?.detail?.url, false);
+    }
+  }
+
   const visual = document.querySelector(".hero__visual");
   if (visual) {
     const src = state.hero?.keyVisual?.src ? safeUrl(normalizeImageUrl(state.hero.keyVisual.src)) : "";
@@ -697,7 +754,12 @@ function applyStateToDom(state) {
   const newsGrid = document.querySelector("#news .newsGrid");
   if (newsGrid && Array.isArray(state.news)) {
     newsGrid.innerHTML = "";
-    state.news.forEach((n) => {
+    const limit = parseInt(newsGrid.dataset.limit || "", 10);
+    const newsItems = Number.isFinite(limit) && limit > 0 ? state.news.slice(0, limit) : state.news;
+
+    // トップページは data-limit="3"、news.html は制限なし。
+    // 同じ news.* データを使いながら、ページごとに表示件数だけ変えています。
+    newsItems.forEach((n) => {
       const art = document.createElement("article");
       art.className = "card card--hover";
       art.innerHTML = `
@@ -748,10 +810,46 @@ function applyStateToDom(state) {
     }
   }
 
+  const pastGrid = document.querySelector("#past .pastGrid");
+  if (pastGrid && Array.isArray(state.past?.items)) {
+    const sub = document.querySelector("#past .section__sub");
+    if (sub && state.past?.sub != null) sub.textContent = state.past.sub;
+
+    pastGrid.innerHTML = "";
+    state.past.items.forEach((it) => {
+      const href = safeUrl(it.url);
+      const photo = it.photo ? safeUrl(normalizeImageUrl(it.photo)) : "";
+      const art = document.createElement(href ? "a" : "article");
+      art.className = "pastCard card card--hover";
+
+      // 写真が未設定でもカードの形は残します。
+      // 初心者が後から past.n.photo に画像パスを入れれば、自動で差し替わります。
+      const photoHtml = photo
+        ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(it.title)}">`
+        : `<span>NO IMAGE</span>`;
+
+      if (href) {
+        art.href = href;
+        if (isExternalUrl(href)) { art.target = "_blank"; art.rel = "noopener"; }
+      }
+
+      art.innerHTML = `
+        <div class="pastCard__photo">${photoHtml}</div>
+        <p class="pastCard__year">${escapeHtml(it.year)}</p>
+        <h3 class="card__title">${escapeHtml(it.title)}</h3>
+        <p class="card__text">${escapeHtml(it.text)}</p>
+      `.trim();
+      pastGrid.appendChild(art);
+    });
+  }
+
   const aboutSec = document.querySelector("#about");
   if (aboutSec) {
     const sub = aboutSec.querySelector(".section__sub");
     if (sub && state.about?.sub != null) sub.textContent = state.about.sub;
+
+    const intro = aboutSec.querySelector("[data-about-intro]");
+    if (intro && state.about?.concept != null) intro.textContent = state.about.concept;
 
     const cards = Array.from(aboutSec.querySelectorAll(".card"));
     if (cards[0] && state.about?.conceptTitle) { const h3 = cards[0].querySelector(".card__title"); if (h3) h3.textContent = state.about.conceptTitle; }
