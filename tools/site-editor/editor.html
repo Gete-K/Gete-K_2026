@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>site.def ローカル編集ツール</title>
+  <link rel="stylesheet" href="/tools/site-editor/editor.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>site.def ローカル編集ツール</h1>
+      <p>GitHub Pages 運用 / 外部通信なし</p>
+    </div>
+    <div class="top-actions">
+      <a class="button ghost" href="/README.md" target="_blank">README</a>
+      <button id="reloadAll" class="button ghost" type="button">再読み込み</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>作業ブランチ作成</h2>
+        <dl class="facts">
+          <dt>現在のブランチ</dt>
+          <dd id="currentBranch">読み込み中</dd>
+        </dl>
+        <label class="field">
+          <span>作業ブランチ名</span>
+          <input id="branchName" type="text" autocomplete="off">
+        </label>
+        <button id="createBranch" class="button primary" type="button">派生ブランチを作成して切り替え</button>
+        <p id="branchNotice" class="notice"></p>
+      </section>
+
+      <section class="panel">
+        <h2>Git status</h2>
+        <pre id="gitStatus" class="codebox">読み込み中</pre>
+      </section>
+    </aside>
+
+    <section class="editor-column">
+      <section class="panel editor-panel">
+        <div class="panel-head">
+          <h2>site.def 編集フォーム</h2>
+          <div class="actions">
+            <button id="resetForm" class="button ghost" type="button">リセット</button>
+            <button id="saveDef" class="button primary" type="button">保存</button>
+          </div>
+        </div>
+        <div id="warnings" class="warnings"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>key（編集不可）</th><th>value（編集可）</th></tr>
+            </thead>
+            <tbody id="defRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel image-panel">
+        <div class="panel-head">
+          <h2>画像管理</h2>
+          <button id="refreshImages" class="button ghost" type="button">更新</button>
+        </div>
+        <div id="dropZone" class="drop-zone">
+          <strong>ここにドラッグ & ドロップ</strong>
+          <span>または</span>
+          <label class="button primary file-button">
+            ファイルを選択
+            <input id="imageInput" type="file" accept=".jpg,.jpeg,.png,.webp,.gif,.svg,image/*">
+          </label>
+          <small>保存先は images/ 配下のみ。1MB以上は警告、3MB以上は強い警告。</small>
+        </div>
+        <div id="uploadNotice" class="notice"></div>
+        <div class="image-grid">
+          <div>
+            <div id="imageList" class="image-list"></div>
+          </div>
+          <div class="image-detail">
+            <img id="selectedImage" alt="">
+            <p id="selectedImageMeta">画像を選択してください。</p>
+            <label class="field">
+              <span>site.def の反映先 key</span>
+              <select id="imageKeySelect"></select>
+            </label>
+            <button id="applyImagePath" class="button primary" type="button">この画像パスを設定する</button>
+            <div id="imageRefs" class="refs"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="preview-column">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>サイトプレビュー（ローカル）</h2>
+          <button id="reloadPreview" class="button ghost" type="button">リロード</button>
+        </div>
+        <div class="tabs" id="previewTabs">
+          <button class="active" data-page="/index.html" type="button">index.html</button>
+          <button data-page="/about.html" type="button">about.html</button>
+          <button data-page="/news.html" type="button">news.html</button>
+        </div>
+        <iframe id="preview" title="local site preview" src="/index.html"></iframe>
+      </section>
+
+      <section class="panel">
+        <h2>site.def で画像を参照している key</h2>
+        <div id="imageKeyRefs" class="refs"></div>
+      </section>
+    </section>
+
+    <section class="bottom">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>差分表示</h2>
+          <button id="commitPreview" class="button ghost" type="button">commit前確認</button>
+        </div>
+        <pre id="diffBox" class="codebox diff">差分なし</pre>
+      </section>
+
+      <section class="panel">
+        <h2>Commit 作成</h2>
+        <div id="commitFiles" class="refs"></div>
+        <label class="field">
+          <span>Commit Message</span>
+          <textarea id="commitMessage" rows="3">Update site.def content</textarea>
+        </label>
+        <button id="commitButton" class="button primary" type="button">Commit を作成</button>
+        <p id="commitResult" class="notice"></p>
+      </section>
+
+      <section class="panel push-panel">
+        <h2>Push（許可制）</h2>
+        <button id="pushPreviewButton" class="button ghost" type="button">push前確認を表示</button>
+        <div id="pushPreview" class="refs"></div>
+        <label class="field">
+          <span>確認欄</span>
+          <input id="pushConfirm" type="text" placeholder="PUSHを許可">
+        </label>
+        <button id="pushButton" class="button danger" type="button" disabled>Push を実行</button>
+        <p id="pushResult" class="notice"></p>
+      </section>
+    </section>
+  </main>
+
+  <script src="/tools/site-editor/editor.js"></script>
+</body>
+</html>

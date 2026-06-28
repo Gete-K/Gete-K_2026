@@ -26,27 +26,19 @@
 
 ## ローカルで確認する方法
 
-`site.def` はブラウザの安全制限のため、HTMLファイルを直接開くだけでは読み込めない場合があります。確認するときは、このフォルダで簡易サーバーを起動してください。
+`site.def` はブラウザの安全制限のため、HTMLファイルを直接開くだけでは読み込めない場合があります。確認するときは、このフォルダで Node.js の簡易サーバーを起動してください。
 
 まず、このリポジトリのフォルダへ移動します。
 
 ```powershell
-cd D:\GitHub\2026\GeteK\Gete-K_2026
+cd XXX\Gete-K_2026
 ```
-
-Windowsで Node.js が入っていない場合は、PowerShell版を使います。
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\local-server.ps1 8000
-```
-
-画面に `Local server: http://127.0.0.1:8000/` と出たら起動できています。止めるときは、そのPowerShell画面で `Ctrl + C` を押します。
-
-Node.js が入っている場合は、こちらでも起動できます。
 
 ```powershell
 node tools/local-server.cjs 8000
 ```
+
+画面に `Local server: http://127.0.0.1:8000/` と出たら起動できています。止めるときは、その画面で `Ctrl + C` を押します。
 
 ブラウザで次を開きます。
 
@@ -135,3 +127,39 @@ past.1.photo = ./assets/public/past/stage-2024.jpg
 - ファイル名に本名、住所、撮影場所を入れない
 
 写真を載せない場合は `なし` のままで大丈夫です。
+
+## ローカル編集ツールの使い方
+
+`content/site.def` をブラウザ画面から安全に編集するためのローカル専用ツールを追加しています。GitHub Pages 運用を前提にしており、公開用の HTML/CSS/JS やビルド方式は変更しません。
+
+```powershell
+npm run edit
+```
+
+起動後、表示された `http://127.0.0.1:8123/__site_editor/` をブラウザで開きます。
+
+Node.js / npm が入っていない場合は、Node.js LTS をインストールしてから実行してください。Windows では次の方法が使えます。
+
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+
+`winget` が使えない場合は、Node.js 公式サイトから LTS 版のインストーラーを入手してください。
+
+```text
+https://nodejs.org/
+```
+
+インストール後は PowerShell を開き直し、次のコマンドで確認します。
+
+```powershell
+node -v
+npm -v
+```
+
+- 最初に現在のブランチを確認し、`main` ブランチ上では派生ブランチを作成してから編集します。
+- `site.def` は key を固定したまま value だけ編集できます。コメント行と空行は保持されます。
+- 右側の iframe で `index.html` / `about.html` / `news.html` をローカルプレビューできます。
+- 画像は `images/` 配下にだけ追加できます。上書き時は `backup/images/` にバックアップが作成されます。
+- 差分と変更画像を確認してから commit できます。`main` ブランチ上の commit と push はブロックされます。
+- push は確認欄に `PUSHを許可` と入力した場合だけ実行できます。push 後は GitHub Pages の反映を確認してください。

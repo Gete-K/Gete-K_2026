@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "edit": "node tools/site-editor/server.cjs"
+  }
+}
